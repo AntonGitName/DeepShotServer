@@ -18,13 +18,24 @@ jar {
 
 repositories {
     mavenCentral()
+    maven { url "http://repo.spring.io/libs-snapshot" }
 }
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile("org.springframework.boot:spring-boot-starter-web")
+    def springBootVersion = '1.2.6.RELEASE'
+
+    compile("org.springframework.boot:spring-boot-starter-web:$springBootVersion")
+    compile("org.springframework.boot:spring-boot-starter-jdbc:$springBootVersion")
+
+    compile('org.hibernate.javax.persistence:hibernate-jpa-2.0-api:1.0.1.Final')
+    compile('org.hibernate:hibernate-entitymanager:4.1.7.Final')
+    compile("org.postgresql:postgresql:9.2-1003-jdbc4")
+
+    compile files('libs/Filters.jar')
+
     testCompile("junit:junit")
 }
 
