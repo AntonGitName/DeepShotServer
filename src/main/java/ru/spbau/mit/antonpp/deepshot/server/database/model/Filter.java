@@ -16,7 +16,18 @@ public class Filter {
     @Column(unique = true)
     private String name;
 
+    @Column(name = "preview")
+    private String preview;
+
     public Filter() {
+    }
+
+    public String getPreview() {
+        return preview;
+    }
+
+    public void setPreview(String preview) {
+        this.preview = preview;
     }
 
     public Long getId() {
