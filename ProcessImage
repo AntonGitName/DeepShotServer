@@ -1,0 +1,7 @@
+#!/bin/bash
+
+sleep 10
+
+dir=$(dirname $2)
+mkdir -p $dir
+cp -p $1 $2
