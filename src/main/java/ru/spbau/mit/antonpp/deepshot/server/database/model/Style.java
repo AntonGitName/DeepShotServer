@@ -2,32 +2,35 @@ package ru.spbau.mit.antonpp.deepshot.server.database.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 
 /**
  * @author antonpp
  * @since 26/10/15
  */
-@Entity(name = "Filter")
-public class Filter {
+@Entity(name = "Style")
+public class Style {
 
-    @Column(unique = true)
+    @Id
+    @GeneratedValue
     private Long id;
 
     @Column(unique = true)
     private String name;
 
-    @Column(name = "preview")
-    private String preview;
+    @Column(name = "imageUrl")
+    private String uri;
 
-    public Filter() {
+    public Style() {
     }
 
-    public String getPreview() {
-        return preview;
+    public String getUri() {
+        return uri;
     }
 
-    public void setPreview(String preview) {
-        this.preview = preview;
+    public void setUri(String uri) {
+        this.uri = uri;
     }
 
     public Long getId() {

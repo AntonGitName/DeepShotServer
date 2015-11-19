@@ -1,86 +1,81 @@
 package ru.spbau.mit.antonpp.deepshot.server.processing;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import ru.spbau.mit.antonpp.deepshot.server.database.service.TaskRecordRepository;
-import ru.spbau.mit.antonpp.deepshot.server.database.service.TaskResultRepository;
+import org.springframework.stereotype.Component;
+import ru.spbau.mit.antonpp.deepshot.server.Constants;
+import ru.spbau.mit.antonpp.deepshot.server.database.Util;
+import ru.spbau.mit.antonpp.deepshot.server.database.model.MLOutputRecord;
+import ru.spbau.mit.antonpp.deepshot.server.database.service.InputRecordRepository;
+import ru.spbau.mit.antonpp.deepshot.server.database.service.OutputRecordRepository;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Base64;
 
 /**
  * @author antonpp
  * @since 27/10/15
  */
+@Component
 public class ImageTask {
 
     @Autowired
-    private static TaskRecordRepository taskRecordRepository;
+    public InputRecordRepository inputRecordRepository;
 
     @Autowired
-    private static TaskResultRepository taskResultRepository;
+    public OutputRecordRepository outputRecordRepository;
 
-    private ImageTask() {
-        throw new UnsupportedOperationException();
-    }
-
-    public static void start(long taskId, String encodedImage, long filterId) {
-        final ImageFilteringTask task = new ImageFilteringTask(taskId, encodedImage, filterId);
+    public void start(String username, String encodedImage, long filterId) {
+        final ImageFilteringTask task = new ImageFilteringTask(encodedImage, filterId, username);
         new Thread(task).start();
     }
 
-    private static BufferedImage decodeImage(String encodedImage) throws IOException {
-        final String encoded = encodedImage.replace("\n", "");
-        final byte[] bytes = Base64.getDecoder().decode(encoded);
-        final BufferedImage result;
-        try (ByteArrayInputStream stream = new ByteArrayInputStream(bytes)) {
-            result = ImageIO.read(stream);
-        }
-        return result;
+    private long addInputRecord(String username, String imageUrl, long styleId) {
+        return inputRecordRepository.addInputRecord(username, imageUrl, styleId);
     }
 
-    private static String encodeImage(BufferedImage image) throws IOException {
-        final byte[] bytes;
-        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            ImageIO.write(image, "jpg", baos);
-            bytes = baos.toByteArray();
-        }
-        return Base64.getEncoder().encodeToString(bytes);
+    private long addOutputRecord(long taskId) {
+        return outputRecordRepository.addOutputRecord(MLOutputRecord.Status.PROCESSING, null, taskId);
     }
 
-    private static void saveTaskRecord(long id, String encodedImage, long filterId) {
-        taskRecordRepository.addTaskRecord(id, encodedImage, filterId);
+    private void updateOutputRecord(long id, MLOutputRecord.Status status, String imageUrl) {
+        outputRecordRepository.updateOutputRecord(id, status, imageUrl);
     }
 
-    private static void saveTaskResult(String encodedImage, long taskId) {
-        taskResultRepository.addTaskResult(encodedImage, taskId);
+    private void startProcessForImageUrl(String inputImageUrl, String outputImageUrl) throws IOException, InterruptedException {
+        final String cmd = String.format("%s %s %s", Constants.IMAGE_EXECUTABLE, inputImageUrl, outputImageUrl);
+        Process process = Runtime.getRuntime().exec(cmd);
+        process.waitFor();
     }
 
-    private static class ImageFilteringTask implements Runnable {
+    private class ImageFilteringTask implements Runnable {
 
-        private final long taskId;
         private final String encodedImage;
-        private final long filterId;
+        private final long styleId;
+        private final String username;
 
-        private ImageFilteringTask(long taskId, String encodedImage, long filterId) {
-            this.taskId = taskId;
+        private ImageFilteringTask(String encodedImage, long styleId, String username) {
             this.encodedImage = encodedImage;
-            this.filterId = filterId;
+            this.styleId = styleId;
+            this.username = username;
         }
 
         @Override
         public void run() {
             try {
-                saveTaskRecord(taskId, encodedImage, filterId);
-                final ImageFilter filter = ImageFilter.fromLong(filterId);
-                final BufferedImage image = decodeImage(encodedImage);
-                final BufferedImage filteredImage = filter.process(image);
-                final String result = encodeImage(filteredImage);
-                saveTaskResult(result, taskId);
-            } catch (IOException e) {
+                final BufferedImage inputImage = Util.decodeImage(encodedImage);
+                final String inputImageUrl = Util.saveImage(Util.ImageType.INPUT, inputImage);
+
+                final long inputRecordId = addInputRecord(username, inputImageUrl, styleId);
+
+                final long outputRecordId = addOutputRecord(inputRecordId);
+
+                long start = System.currentTimeMillis();
+                final String outputImageUrl = Util.saveImage(Util.ImageType.OUTPUT, null);
+                startProcessForImageUrl(inputImageUrl, outputImageUrl);
+                System.out.printf("Task %d, time Elapsed: %d\n", inputRecordId, (System.currentTimeMillis() - start) / 1000);
+
+                updateOutputRecord(outputRecordId, MLOutputRecord.Status.READY, outputImageUrl);
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }
