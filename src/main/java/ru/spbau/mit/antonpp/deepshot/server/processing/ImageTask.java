@@ -7,6 +7,7 @@ import ru.spbau.mit.antonpp.deepshot.server.database.Util;
 import ru.spbau.mit.antonpp.deepshot.server.database.model.MLOutputRecord;
 import ru.spbau.mit.antonpp.deepshot.server.database.service.InputRecordRepository;
 import ru.spbau.mit.antonpp.deepshot.server.database.service.OutputRecordRepository;
+import ru.spbau.mit.antonpp.deepshot.server.gcm.GcmSender;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -24,8 +25,8 @@ public class ImageTask {
     @Autowired
     public OutputRecordRepository outputRecordRepository;
 
-    public void start(String username, String encodedImage, long filterId) {
-        final ImageFilteringTask task = new ImageFilteringTask(encodedImage, filterId, username);
+    public void start(String username, String encodedImage, long filterId, String gcmToken) {
+        final ImageFilteringTask task = new ImageFilteringTask(encodedImage, filterId, username, gcmToken);
         new Thread(task).start();
     }
 
@@ -52,11 +53,13 @@ public class ImageTask {
         private final String encodedImage;
         private final long styleId;
         private final String username;
+        private final String gcmToken;
 
-        private ImageFilteringTask(String encodedImage, long styleId, String username) {
+        private ImageFilteringTask(String encodedImage, long styleId, String username, String gcmToken) {
             this.encodedImage = encodedImage;
             this.styleId = styleId;
             this.username = username;
+            this.gcmToken = gcmToken;
         }
 
         @Override
@@ -75,6 +78,7 @@ public class ImageTask {
                 System.out.printf("Task %d, time Elapsed: %d\n", inputRecordId, (System.currentTimeMillis() - start) / 1000);
 
                 updateOutputRecord(outputRecordId, MLOutputRecord.Status.READY, outputImageUrl);
+                GcmSender.send(gcmToken, "ready");
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }

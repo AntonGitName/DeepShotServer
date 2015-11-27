@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.Random;
 
 /**
  * @author antonpp
@@ -15,6 +16,24 @@ import java.util.Base64;
 public class Util {
 
     private static final String IMAGES_FOLDER = "images/";
+    private static final char[] symbols;
+
+    static {
+        final StringBuilder tmp = new StringBuilder();
+        for (char ch = '0'; ch <= '9'; ++ch) {
+            tmp.append(ch);
+        }
+        for (char ch = 'a'; ch <= 'z'; ++ch) {
+            tmp.append(ch);
+        }
+        for (char ch = 'A'; ch <= 'Z'; ++ch) {
+            tmp.append(ch);
+        }
+        symbols = tmp.toString().toCharArray();
+    }
+
+    private static Random RND = new Random();
+    private static int FILE_NAME_LENGTH = 32;
 
     private Util() {
         throw new UnsupportedOperationException();
@@ -43,14 +62,23 @@ public class Util {
         return Base64.getEncoder().encodeToString(bytes);
     }
 
+    private static String generateRandomFilename() {
+        final StringBuilder builder = new StringBuilder(FILE_NAME_LENGTH + 4);
+        for (int i = 0; i < FILE_NAME_LENGTH; ++i) {
+            builder.append(symbols[RND.nextInt(symbols.length)]);
+        }
+        builder.append(".jpg");
+        return builder.toString();
+    }
+
     private static String createImageUrl(ImageType type) {
         File dir = new File(IMAGES_FOLDER + type + "/");
         dir.mkdirs();
-        long id = 1;
-        File imageFile = new File(dir.getAbsolutePath() + "/" + id + ".jpg");
+        String fname = generateRandomFilename();
+        File imageFile = new File(dir.getAbsolutePath() + "/" + fname);
         while (imageFile.exists()) {
-            ++id;
-            imageFile = new File(dir.getAbsolutePath() + "/" + id + ".jpg");
+            fname = generateRandomFilename();
+            imageFile = new File(dir.getAbsolutePath() + "/" + fname);
         }
         return imageFile.getAbsolutePath();
     }

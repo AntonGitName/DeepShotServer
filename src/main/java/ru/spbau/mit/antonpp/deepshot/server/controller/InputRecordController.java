@@ -25,10 +25,11 @@ public class InputRecordController {
     @ResponseBody
     public void postImage(@RequestParam String username,
                           @RequestParam String encodedImage,
-                          @RequestParam long styleId) throws IOException {
+                          @RequestParam long styleId,
+                          @RequestParam String gcmToken) throws IOException {
 
         System.out.println("InputRecordController.postImage");
-        imageTask.start(username, encodedImage, styleId);
+        imageTask.start(username, encodedImage, styleId, gcmToken);
     }
 
 }
