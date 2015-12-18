@@ -21,8 +21,8 @@ repositories {
     maven { url "http://repo.spring.io/libs-snapshot" }
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 dependencies {
     def springBootVersion = '1.2.6.RELEASE'
@@ -35,7 +35,10 @@ dependencies {
     // db start
     compile('org.hibernate.javax.persistence:hibernate-jpa-2.0-api:1.0.1.Final')
     compile('org.hibernate:hibernate-entitymanager:4.1.7.Final')
-    compile("org.postgresql:postgresql:9.2-1003-jdbc4")
+
+    // compile("org.postgresql:postgresql:9.2-1003-jdbc4")
+    compile('org.xerial:sqlite-jdbc:3.7.2')
+
     // db end
 
     // gcm start

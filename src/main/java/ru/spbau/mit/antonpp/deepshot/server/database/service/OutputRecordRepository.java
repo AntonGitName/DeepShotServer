@@ -2,6 +2,7 @@ package ru.spbau.mit.antonpp.deepshot.server.database.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -10,8 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.spbau.mit.antonpp.deepshot.server.database.model.MLOutputRecord;
 import ru.spbau.mit.antonpp.deepshot.server.database.model.MLOutputRecord.Status;
 
-import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.List;
 
 /**
@@ -26,15 +26,18 @@ public class OutputRecordRepository {
     private static final String INSERT = "INSERT INTO MLOutputRecord(imageUrl, status, userInputRecord) VALUES (?, ?, ?)";
     private static final String UPDATE = "UPDATE MLOutputRecord SET status = ?, imageUrl = ? WHERE id = ?";
 
-    private static final RowMapper<MLOutputRecord> filterMapper = (rs, rowNum) -> {
-        MLOutputRecord MLOutputRecord = new MLOutputRecord();
+    private static final RowMapper<MLOutputRecord> filterMapper = new RowMapper<MLOutputRecord>() {
+        @Override
+        public MLOutputRecord mapRow(ResultSet rs, int rowNum) throws SQLException {
+            MLOutputRecord MLOutputRecord = new MLOutputRecord();
 
-        MLOutputRecord.setId(rs.getLong("id"));
-        MLOutputRecord.setImageUrl(rs.getString("imageUrl"));
-        MLOutputRecord.setStatus(Status.valueOf(rs.getString("status")));
-        MLOutputRecord.setUserInputRecord(rs.getLong("userInputRecord"));
+            MLOutputRecord.setId(rs.getLong("id"));
+            MLOutputRecord.setImageUrl(rs.getString("imageUrl"));
+            MLOutputRecord.setStatus(Status.valueOf(rs.getString("status")));
+            MLOutputRecord.setUserInputRecord(rs.getLong("userInputRecord"));
 
-        return MLOutputRecord;
+            return MLOutputRecord;
+        }
     };
 
     @Autowired
@@ -51,17 +54,21 @@ public class OutputRecordRepository {
     }
 
     @Transactional
-    public long addOutputRecord(Status status, String imageUrl, long inputRecordId) {
+    public long addOutputRecord(final Status status, final String imageUrl, final long inputRecordId) {
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbc.update(con -> {
-            PreparedStatement ps = con.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, imageUrl);
-            ps.setString(2, status.toString());
-            ps.setLong(3, inputRecordId);
-            return ps;
+        jdbc.update(new PreparedStatementCreator() {
+            @Override
+            public PreparedStatement createPreparedStatement(Connection con) throws SQLException {
+                PreparedStatement ps = con.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS);
+                ps.setString(1, imageUrl);
+                ps.setString(2, status.toString());
+                ps.setLong(3, inputRecordId);
+                return ps;
+            }
         }, keyHolder);
-        return (Integer) keyHolder.getKeys().get("id");
+//        return (Integer) keyHolder.getKeys().get("id");
+        return (Integer) keyHolder.getKeys().get("last_insert_rowid()");
     }
 
     @Transactional

@@ -11,6 +11,8 @@ import ru.spbau.mit.antonpp.deepshot.server.gcm.GcmSender;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author antonpp
@@ -19,15 +21,15 @@ import java.io.IOException;
 @Component
 public class ImageTask {
 
+    private final ExecutorService threadPool = Executors.newCachedThreadPool();
     @Autowired
     public InputRecordRepository inputRecordRepository;
-
     @Autowired
     public OutputRecordRepository outputRecordRepository;
 
     public void start(String username, String encodedImage, long filterId, String gcmToken) {
         final ImageFilteringTask task = new ImageFilteringTask(encodedImage, filterId, username, gcmToken);
-        new Thread(task).start();
+        threadPool.execute(task);
     }
 
     private long addInputRecord(String username, String imageUrl, long styleId) {
@@ -78,7 +80,9 @@ public class ImageTask {
                 System.out.printf("Task %d, time Elapsed: %d\n", inputRecordId, (System.currentTimeMillis() - start) / 1000);
 
                 updateOutputRecord(outputRecordId, MLOutputRecord.Status.READY, outputImageUrl);
-                GcmSender.send(gcmToken, "ready");
+                if (gcmToken != null) {
+                    GcmSender.send(gcmToken, "ready");
+                }
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }

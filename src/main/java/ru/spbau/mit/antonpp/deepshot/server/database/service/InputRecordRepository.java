@@ -11,10 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.spbau.mit.antonpp.deepshot.server.database.model.Style;
 import ru.spbau.mit.antonpp.deepshot.server.database.model.UserInputRecord;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 /**
  * @author antonpp
@@ -26,13 +23,16 @@ public class InputRecordRepository {
     private static final String FIND_BY_ID = "SELECT * FROM UserInputRecord WHERE id = ?";
     private static final String INSERT = "INSERT INTO UserInputRecord(username, style, imageUrl) VALUES (?, ?, ?)";
 
-    private static final RowMapper<UserInputRecord> filterMapper = (rs, rowNum) -> {
-        UserInputRecord userInputRecord = new UserInputRecord();
-        userInputRecord.setId(rs.getLong("id"));
-        userInputRecord.setUsername(rs.getString("username"));
-        userInputRecord.setImageUrl(rs.getString("imageUrl"));
-        userInputRecord.setStyle((Style) rs.getObject("style"));
-        return userInputRecord;
+    private static final RowMapper<UserInputRecord> filterMapper = new RowMapper<UserInputRecord>() {
+        @Override
+        public UserInputRecord mapRow(ResultSet rs, int rowNum) throws SQLException {
+            UserInputRecord userInputRecord = new UserInputRecord();
+            userInputRecord.setId(rs.getLong("id"));
+            userInputRecord.setUsername(rs.getString("username"));
+            userInputRecord.setImageUrl(rs.getString("imageUrl"));
+            userInputRecord.setStyle((Style) rs.getObject("style"));
+            return userInputRecord;
+        }
     };
 
     @Autowired
@@ -44,7 +44,7 @@ public class InputRecordRepository {
     }
 
     @Transactional
-    public long addInputRecord(String username, String imageUrl, long styleId) {
+    public long addInputRecord(final String username, final String imageUrl, final long styleId) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbc.update(new PreparedStatementCreator() {
             @Override
@@ -56,6 +56,6 @@ public class InputRecordRepository {
                 return ps;
             }
         }, keyHolder);
-        return (Integer) keyHolder.getKeys().get("id");
+        return (Integer) keyHolder.getKeys().get("last_insert_rowid()");
     }
 }

@@ -33,7 +33,7 @@ public class OutputRecordController {
         System.out.println("OutputRecordController.getAllResultsForUser");
         List<MLOutputRecord> res = repository.getAllRecordsByName(username);
         GetResultListResponse response = new GetResultListResponse();
-        response.setIds(new ArrayList<>());
+        response.setIds(new ArrayList<Long>());
         for (MLOutputRecord record : res) {
             response.getIds().add(record.getId());
         }
