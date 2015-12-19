@@ -82,10 +82,8 @@ public class ImageTask {
                 long start = System.currentTimeMillis();
                 final String outputImageUrl = Util.saveImage(Util.ImageType.OUTPUT, null);
                 if (useGpu) {
-                    if (isGpuUsed.get()) {
+                    if (isGpuUsed.getAndSet(true)) {
                         useGpu = false;
-                    } else {
-                        isGpuUsed.set(true);
                     }
                 }
                 System.out.printf("GPU used: %s\n", useGpu);
