@@ -26,12 +26,13 @@ public class InputRecordController {
     public void postImage(@RequestParam String username,
                           @RequestParam String encodedImage,
                           @RequestParam long styleId,
-                          @RequestParam(required = false) String gcmToken) throws IOException {
+                          @RequestParam(required = false) String gcmToken,
+                          @RequestParam(required = false, defaultValue = "true") boolean useGpu) throws IOException {
         if (gcmToken != null) {
             System.out.println("InputRecordController.postImage");
         } else {
             System.out.println("InputRecordController.postImage (no gcm)");
         }
-        imageTask.start(username, encodedImage, styleId, gcmToken);
+        imageTask.start(username, encodedImage, styleId, gcmToken, useGpu);
     }
 }

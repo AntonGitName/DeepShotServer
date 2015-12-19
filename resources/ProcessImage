@@ -2,6 +2,7 @@
 
 sleep 10
 
+echo "--input=$1 --output=$2 --gpu=$3 --style=$4"
 dir=$(dirname $2)
 mkdir -p $dir
 cp -p $1 $2

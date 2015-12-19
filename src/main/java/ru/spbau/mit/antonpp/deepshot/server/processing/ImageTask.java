@@ -13,6 +13,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author antonpp
@@ -22,13 +23,15 @@ import java.util.concurrent.Executors;
 public class ImageTask {
 
     private final ExecutorService threadPool = Executors.newCachedThreadPool();
+    private final AtomicBoolean isGpuUsed = new AtomicBoolean(false);
+
     @Autowired
     public InputRecordRepository inputRecordRepository;
     @Autowired
     public OutputRecordRepository outputRecordRepository;
 
-    public void start(String username, String encodedImage, long filterId, String gcmToken) {
-        final ImageFilteringTask task = new ImageFilteringTask(encodedImage, filterId, username, gcmToken);
+    public void start(String username, String encodedImage, long filterId, String gcmToken, boolean useGpu) {
+        final ImageFilteringTask task = new ImageFilteringTask(encodedImage, filterId, username, gcmToken, useGpu);
         threadPool.execute(task);
     }
 
@@ -44,8 +47,8 @@ public class ImageTask {
         outputRecordRepository.updateOutputRecord(id, status, imageUrl);
     }
 
-    private void startProcessForImageUrl(String inputImageUrl, String outputImageUrl) throws IOException, InterruptedException {
-        final String cmd = String.format("%s %s %s", Constants.IMAGE_EXECUTABLE, inputImageUrl, outputImageUrl);
+    private void startProcessForImageUrl(String inputImageUrl, String outputImageUrl, boolean useGpu) throws IOException, InterruptedException {
+        final String cmd = String.format("%s %s %s %s", Constants.IMAGE_EXECUTABLE, inputImageUrl, outputImageUrl, useGpu);
         Process process = Runtime.getRuntime().exec(cmd);
         process.waitFor();
     }
@@ -56,12 +59,14 @@ public class ImageTask {
         private final long styleId;
         private final String username;
         private final String gcmToken;
+        private boolean useGpu;
 
-        private ImageFilteringTask(String encodedImage, long styleId, String username, String gcmToken) {
+        private ImageFilteringTask(String encodedImage, long styleId, String username, String gcmToken, boolean useGpu) {
             this.encodedImage = encodedImage;
             this.styleId = styleId;
             this.username = username;
             this.gcmToken = gcmToken;
+            this.useGpu = useGpu;
         }
 
         @Override
@@ -76,12 +81,23 @@ public class ImageTask {
 
                 long start = System.currentTimeMillis();
                 final String outputImageUrl = Util.saveImage(Util.ImageType.OUTPUT, null);
-                startProcessForImageUrl(inputImageUrl, outputImageUrl);
+                if (useGpu) {
+                    if (isGpuUsed.get()) {
+                        useGpu = false;
+                    } else {
+                        isGpuUsed.set(true);
+                    }
+                }
+                System.out.printf("GPU used: %s\n", useGpu);
+                startProcessForImageUrl(inputImageUrl, outputImageUrl, useGpu);
                 System.out.printf("Task %d, time Elapsed: %d\n", inputRecordId, (System.currentTimeMillis() - start) / 1000);
+                if (useGpu) {
+                    isGpuUsed.set(false);
+                }
 
                 updateOutputRecord(outputRecordId, MLOutputRecord.Status.READY, outputImageUrl);
                 if (gcmToken != null) {
-                    GcmSender.send(gcmToken, "ready");
+                    GcmSender.send(gcmToken, String.format("Image(request id = %s) ready", inputRecordId));
                 }
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
