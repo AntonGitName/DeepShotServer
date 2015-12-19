@@ -86,18 +86,24 @@ public class ImageTask {
                         useGpu = false;
                     }
                 }
+                MLOutputRecord.Status status = MLOutputRecord.Status.READY;
                 System.out.printf("GPU used: %s\n", useGpu);
-                startProcessForImageUrl(inputImageUrl, outputImageUrl, useGpu);
+                try {
+                    startProcessForImageUrl(inputImageUrl, outputImageUrl, useGpu);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    status = MLOutputRecord.Status.FAILED;
+                }
                 System.out.printf("Task %d, time Elapsed: %d\n", inputRecordId, (System.currentTimeMillis() - start) / 1000);
                 if (useGpu) {
                     isGpuUsed.set(false);
                 }
 
-                updateOutputRecord(outputRecordId, MLOutputRecord.Status.READY, outputImageUrl);
+                updateOutputRecord(outputRecordId, status, outputImageUrl);
                 if (gcmToken != null) {
                     GcmSender.send(gcmToken, String.format("Image(request id = %s) ready", inputRecordId));
                 }
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }

@@ -56,6 +56,7 @@ public class InputRecordRepository {
                 return ps;
             }
         }, keyHolder);
+//        return (Integer) keyHolder.getKeys().get("id");
         return (Integer) keyHolder.getKeys().get("last_insert_rowid()");
     }
 }

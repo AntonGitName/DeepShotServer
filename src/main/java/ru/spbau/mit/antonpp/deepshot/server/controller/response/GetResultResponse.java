@@ -9,6 +9,7 @@ import ru.spbau.mit.antonpp.deepshot.server.database.model.MLOutputRecord;
 public class GetResultResponse {
     private MLOutputRecord.Status status;
     private String encodedImage;
+    private String owner;
 
     public GetResultResponse() {
     }
@@ -27,5 +28,13 @@ public class GetResultResponse {
 
     public void setEncodedImage(String encodedImage) {
         this.encodedImage = encodedImage;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
     }
 }

@@ -22,6 +22,7 @@ import java.util.List;
 public class OutputRecordRepository {
 
     private static final String FIND_BY_ID = "SELECT * FROM MLOutputRecord WHERE id = ?";
+    private static final String FIND_OWNER_BY_ID = "SELECT U.* FROM UserInputRecord U JOIN MLOutputRecord ML ON ML.userInputRecord = U.id WHERE ML.id = ?";
     private static final String FIND_ALL_BY_USERNAME = "SELECT O.* FROM MLOutputRecord O JOIN UserInputRecord I ON I.id = O.userInputRecord WHERE I.username = ?";
     private static final String INSERT = "INSERT INTO MLOutputRecord(imageUrl, status, userInputRecord) VALUES (?, ?, ?)";
     private static final String UPDATE = "UPDATE MLOutputRecord SET status = ?, imageUrl = ? WHERE id = ?";
@@ -40,6 +41,13 @@ public class OutputRecordRepository {
         }
     };
 
+    private static final RowMapper<String> ownerMapper = new RowMapper<String>() {
+        @Override
+        public String mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return rs.getString("username");
+        }
+    };
+
     @Autowired
     protected JdbcTemplate jdbc;
 
@@ -51,6 +59,11 @@ public class OutputRecordRepository {
     @Transactional
     public MLOutputRecord getTaskRecordById(long id) {
         return jdbc.queryForObject(FIND_BY_ID, new Object[]{id}, filterMapper);
+    }
+
+    @Transactional
+    public String getOwnerById(long id) {
+        return jdbc.queryForObject(FIND_OWNER_BY_ID, new Object[]{id}, ownerMapper);
     }
 
     @Transactional

@@ -12,7 +12,6 @@ import ru.spbau.mit.antonpp.deepshot.server.database.Util;
 import ru.spbau.mit.antonpp.deepshot.server.database.model.MLOutputRecord;
 import ru.spbau.mit.antonpp.deepshot.server.database.service.OutputRecordRepository;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,11 +46,12 @@ public class OutputRecordController {
         GetResultResponse response = new GetResultResponse();
         MLOutputRecord record = repository.getTaskRecordById(id);
         response.setStatus(record.getStatus());
+        response.setOwner(repository.getOwnerById(id));
         try {
             if (record.getStatus() == MLOutputRecord.Status.READY) {
                 response.setEncodedImage(Util.getEncodedImageFromUrl(record.getImageUrl()));
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             response.setStatus(MLOutputRecord.Status.FAILED);
         }
         return response;
