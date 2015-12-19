@@ -7,6 +7,7 @@ import ru.spbau.mit.antonpp.deepshot.server.database.Util;
 import ru.spbau.mit.antonpp.deepshot.server.database.model.MLOutputRecord;
 import ru.spbau.mit.antonpp.deepshot.server.database.service.InputRecordRepository;
 import ru.spbau.mit.antonpp.deepshot.server.database.service.OutputRecordRepository;
+import ru.spbau.mit.antonpp.deepshot.server.database.service.StyleRepository;
 import ru.spbau.mit.antonpp.deepshot.server.gcm.GcmSender;
 
 import java.awt.image.BufferedImage;
@@ -25,6 +26,8 @@ public class ImageTask {
     private final ExecutorService threadPool = Executors.newCachedThreadPool();
     private final AtomicBoolean isGpuUsed = new AtomicBoolean(false);
 
+    @Autowired
+    public StyleRepository styleRepository;
     @Autowired
     public InputRecordRepository inputRecordRepository;
     @Autowired
@@ -47,8 +50,9 @@ public class ImageTask {
         outputRecordRepository.updateOutputRecord(id, status, imageUrl);
     }
 
-    private void startProcessForImageUrl(String inputImageUrl, String outputImageUrl, boolean useGpu) throws IOException, InterruptedException {
-        final String cmd = String.format("%s %s %s %s", Constants.IMAGE_EXECUTABLE, inputImageUrl, outputImageUrl, useGpu);
+    private void startProcessForImageUrl(String inputImageUrl, String outputImageUrl, String styleUrl, boolean useGpu) throws IOException, InterruptedException {
+        final String cmd = String.format("%s %s %s %s %s", Constants.IMAGE_EXECUTABLE, inputImageUrl, outputImageUrl, styleUrl, useGpu);
+        System.out.println(cmd);
         Process process = Runtime.getRuntime().exec(cmd);
         process.waitFor();
     }
@@ -75,6 +79,8 @@ public class ImageTask {
                 final BufferedImage inputImage = Util.decodeImage(encodedImage);
                 final String inputImageUrl = Util.saveImage(Util.ImageType.INPUT, inputImage);
 
+                final String styleUrl = styleRepository.getStyleById(styleId).getUri();
+
                 final long inputRecordId = addInputRecord(username, inputImageUrl, styleId);
 
                 final long outputRecordId = addOutputRecord(inputRecordId);
@@ -89,7 +95,7 @@ public class ImageTask {
                 MLOutputRecord.Status status = MLOutputRecord.Status.READY;
                 System.out.printf("GPU used: %s\n", useGpu);
                 try {
-                    startProcessForImageUrl(inputImageUrl, outputImageUrl, useGpu);
+                    startProcessForImageUrl(inputImageUrl, outputImageUrl, styleUrl, useGpu);
                 } catch (Exception e) {
                     e.printStackTrace();
                     status = MLOutputRecord.Status.FAILED;
