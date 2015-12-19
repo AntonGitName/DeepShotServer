@@ -3,6 +3,8 @@ package ru.spbau.mit.antonpp.deepshot.server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
+import org.springframework.boot.context.embedded.ConfigurableEmbeddedServletContainer;
+import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
 import org.springframework.context.annotation.Bean;
 
 import javax.sql.DataSource;
@@ -25,5 +27,15 @@ public class Application {
         dataSourceBuilder.driverClassName("org.sqlite.JDBC");
         dataSourceBuilder.url("jdbc:sqlite:resources/deepshot.db");
         return dataSourceBuilder.build();
+    }
+
+    @Bean
+    public EmbeddedServletContainerCustomizer containerCustomizer() {
+        return new EmbeddedServletContainerCustomizer() {
+            @Override
+            public void customize(ConfigurableEmbeddedServletContainer container) {
+                container.setPort(5242);
+            }
+        };
     }
 }
