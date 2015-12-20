@@ -17,7 +17,12 @@ import java.io.IOException;
 @SpringBootApplication
 public class Application {
 
+    private static int port = 8080;
+
     public static void main(String[] args) throws IOException {
+        if (args.length == 1) {
+            port = Integer.valueOf(args[0]);
+        }
         SpringApplication.run(Application.class, args);
     }
 
@@ -34,7 +39,7 @@ public class Application {
         return new EmbeddedServletContainerCustomizer() {
             @Override
             public void customize(ConfigurableEmbeddedServletContainer container) {
-                container.setPort(5242);
+                container.setPort(port);
             }
         };
     }
